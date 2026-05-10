@@ -21,10 +21,10 @@ function Home() {
       try {
         const [shipmentsRes, portsRes, cargoRes, tradesRes] = await Promise.all(
           [
-            fetch("http://localhost:5000/api/shipments"),
-            fetch("http://localhost:5000/api/ports/loading"),
-            fetch("http://localhost:5000/api/cargo"),
-            fetch("http://localhost:5000/api/trades"),
+            fetch("http://127.0.0.1:5000/api/shipments"),
+            fetch("http://127.0.0.1:5000/api/ports/loading"),
+            fetch("http://127.0.0.1:5000/api/cargo"),
+            fetch("http://127.0.0.1:5000/api/trades"),
           ],
         );
 
@@ -82,11 +82,11 @@ function Home() {
       padding: "12px 16px",
       textAlign: "left",
       justifyContent: "flex-start",
-      backgroundColor: state.isSelected ? "#2095AE" : "white",
+      backgroundColor: state.isSelected ? "#48CAE4" : "white",
       color: state.isSelected ? "white" : "#333",
       cursor: "pointer",
       "&:hover": {
-        backgroundColor: state.isSelected ? "#2095AE" : "#f0f0f0",
+        backgroundColor: state.isSelected ? "#48CAE4" : "#f0f0f0",
       },
     }),
     singleValue: (provided) => ({

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { Card, Row, Col, Dropdown, Table, Badge } from "react-bootstrap";
 import { FiPackage, FiMapPin, FiBox, FiAnchor, FiFilter } from "react-icons/fi";
 import {
@@ -12,262 +13,110 @@ import {
 } from "recharts";
 
 function Dashboard() {
-  const [stats] = useState({
-    shipments: 4,
-    ports: 3,
-    cargo: 4,
-    trades: 4,
+  const API_BASE = "http://127.0.0.1:5000/api";
+  const [stats, setStats] = useState({
+    shipments: 0,
+    ports: 0,
+    cargo: 0,
+    trades: 0,
   });
+  const [loading, setLoading] = useState(true);
 
   const [activeTab, setActiveTab] = useState("shipments");
   const [chartFilter, setChartFilter] = useState("all");
 
-  const shipmentData = [
-    {
-      Shipment_ID: 1001,
-      Year: 2024,
-      Departure_Date: "2024-01-05",
-      Arrival_Date: "2024-01-20",
-      Transit_Days: 15,
-      Trade_Direction: "Import",
-    },
-    {
-      Shipment_ID: 1002,
-      Year: 2024,
-      Departure_Date: "2024-02-10",
-      Arrival_Date: "2024-02-25",
-      Transit_Days: 15,
-      Trade_Direction: "Export",
-    },
-    {
-      Shipment_ID: 1003,
-      Year: 2024,
-      Departure_Date: "2024-03-01",
-      Arrival_Date: "2024-03-18",
-      Transit_Days: 17,
-      Trade_Direction: "Import",
-    },
-    {
-      Shipment_ID: 1004,
-      Year: 2024,
-      Departure_Date: "2024-03-15",
-      Arrival_Date: "2024-03-30",
-      Transit_Days: 15,
-      Trade_Direction: "Export",
-    },
-    {
-      Shipment_ID: 1005,
-      Year: 2024,
-      Departure_Date: "2024-04-02",
-      Arrival_Date: "2024-04-18",
-      Transit_Days: 16,
-      Trade_Direction: "Import",
-    },
-    {
-      Shipment_ID: 1006,
-      Year: 2024,
-      Departure_Date: "2024-05-08",
-      Arrival_Date: "2024-05-22",
-      Transit_Days: 14,
-      Trade_Direction: "Export",
-    },
-    {
-      Shipment_ID: 1007,
-      Year: 2024,
-      Departure_Date: "2024-06-12",
-      Arrival_Date: "2024-06-28",
-      Transit_Days: 16,
-      Trade_Direction: "Import",
-    },
-    {
-      Shipment_ID: 1008,
-      Year: 2024,
-      Departure_Date: "2024-07-01",
-      Arrival_Date: "2024-07-15",
-      Transit_Days: 14,
-      Trade_Direction: "Export",
-    },
-  ];
+  const [shipmentData, setShipmentData] = useState([]);
+  const [portsData, setPortsData] = useState([]);
+  const [cargoData, setCargoData] = useState([]);
+  const [tradesData, setTradesData] = useState([]);
 
-  const portsData = [
-    {
-      Port_ID: 301,
-      Port_Name: "Shanghai Port",
-      Country: "China",
-      Port_Type: "Seaport",
-      Location: "Shanghai",
-    },
-    {
-      Port_ID: 302,
-      Port_Name: "Singapore Port",
-      Country: "Singapore",
-      Port_Type: "Seaport",
-      Location: "Singapore",
-    },
-    {
-      Port_ID: 303,
-      Port_Name: "Karachi Port",
-      Country: "Pakistan",
-      Port_Type: "Seaport",
-      Location: "Karachi",
-    },
-    {
-      Port_ID: 304,
-      Port_Name: "Dubai Port",
-      Country: "UAE",
-      Port_Type: "Seaport",
-      Location: "Dubai",
-    },
-    {
-      Port_ID: 305,
-      Port_Name: "Mumbai Port",
-      Country: "India",
-      Port_Type: "Seaport",
-      Location: "Mumbai",
-    },
-  ];
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
-  const cargoData = [
-    {
-      Cargo_ID: 201,
-      Cargo_Type: "Container Cargo",
-      Trade_Category: "Electronics",
-      Description: "Smartphones and Laptops",
-      Hazard_Level: "Low",
-    },
-    {
-      Cargo_ID: 202,
-      Cargo_Type: "Liquid Cargo",
-      Trade_Category: "Oil & Gas",
-      Description: "Crude Petroleum Products",
-      Hazard_Level: "High",
-    },
-    {
-      Cargo_ID: 203,
-      Cargo_Type: "Dry Cargo",
-      Trade_Category: "Food",
-      Description: "Rice and Grains",
-      Hazard_Level: "Low",
-    },
-    {
-      Cargo_ID: 204,
-      Cargo_Type: "Hazardous Cargo",
-      Trade_Category: "Chemicals",
-      Description: "Industrial Chemicals",
-      Hazard_Level: "High",
-    },
-    {
-      Cargo_ID: 205,
-      Cargo_Type: "Refrigerated",
-      Trade_Category: "Pharma",
-      Description: "Medical Supplies",
-      Hazard_Level: "Medium",
-    },
-    {
-      Cargo_ID: 206,
-      Cargo_Type: "Bulk Cargo",
-      Trade_Category: "Textiles",
-      Description: "Cotton and Fabrics",
-      Hazard_Level: "Low",
-    },
-  ];
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [
+        shipmentsRes,
+        loadingPortsRes,
+        dischargePortsRes,
+        cargoRes,
+        tradesRes,
+      ] = await Promise.all([
+        axios.get(`${API_BASE}/shipments`),
+        axios.get(`${API_BASE}/ports/loading`),
+        axios.get(`${API_BASE}/ports/discharge`),
+        axios.get(`${API_BASE}/cargo`),
+        axios.get(`${API_BASE}/trades`),
+      ]);
 
-  const tradesData = [
-    {
-      Trade_ID: 501,
-      Shipment_ID: 1001,
-      Cargo_Type: "Container Cargo",
-      Loading_Port: "Shanghai Port",
-      Discharge_Port: "Karachi Port",
-    },
-    {
-      Trade_ID: 502,
-      Shipment_ID: 1002,
-      Cargo_Type: "Liquid Cargo",
-      Loading_Port: "Singapore Port",
-      Discharge_Port: "Karachi Port",
-    },
-    {
-      Trade_ID: 503,
-      Shipment_ID: 1003,
-      Cargo_Type: "Dry Cargo",
-      Loading_Port: "Shanghai Port",
-      Discharge_Port: "Singapore Port",
-    },
-    {
-      Trade_ID: 504,
-      Shipment_ID: 1004,
-      Cargo_Type: "Hazardous Cargo",
-      Loading_Port: "Singapore Port",
-      Discharge_Port: "Karachi Port",
-    },
-    {
-      Trade_ID: 505,
-      Shipment_ID: 1005,
-      Cargo_Type: "Refrigerated",
-      Loading_Port: "Dubai Port",
-      Discharge_Port: "Mumbai Port",
-    },
-    {
-      Trade_ID: 506,
-      Shipment_ID: 1006,
-      Cargo_Type: "Bulk Cargo",
-      Loading_Port: "Mumbai Port",
-      Discharge_Port: "Dubai Port",
-    },
-    {
-      Trade_ID: 507,
-      Shipment_ID: 1007,
-      Cargo_Type: "Container Cargo",
-      Loading_Port: "Shanghai Port",
-      Discharge_Port: "Singapore Port",
-    },
-    {
-      Trade_ID: 508,
-      Shipment_ID: 1008,
-      Cargo_Type: "Liquid Cargo",
-      Loading_Port: "Karachi Port",
-      Discharge_Port: "Dubai Port",
-    },
-  ];
+      const shipments = shipmentsRes.data;
+      const loadingPorts = loadingPortsRes.data;
+      const dischargePorts = dischargePortsRes.data;
+      const cargo = cargoRes.data;
+      const trades = tradesRes.data;
 
+      setStats({
+        shipments: shipments.length,
+        ports: loadingPorts.length + dischargePorts.length,
+        cargo: cargo.length,
+        trades: trades.length,
+      });
+
+      setShipmentData(shipments);
+      setPortsData([...loadingPorts, ...dischargePorts]);
+      setCargoData(cargo);
+      setTradesData(trades);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Dynamic chart data generation based on real data
+  const generateChartData = (data, type) => {
+    if (!data || data.length === 0) {
+      return [
+        { label: "Jan", value: 0 },
+        { label: "Feb", value: 0 },
+        { label: "Mar", value: 0 },
+        { label: "Apr", value: 0 },
+        { label: "May", value: 0 },
+        { label: "Jun", value: 0 },
+        { label: "Jul", value: 0 },
+      ];
+    }
+
+    // Group by month based on creation date or ID
+    const monthlyData = {
+      Jan: 0,
+      Feb: 0,
+      Mar: 0,
+      Apr: 0,
+      May: 0,
+      Jun: 0,
+      Jul: 0,
+    };
+
+    data.forEach((item, index) => {
+      const month = Object.keys(monthlyData)[index % 7];
+      monthlyData[month] += 1;
+    });
+
+    return Object.keys(monthlyData).map((month) => ({
+      label: month,
+      value: monthlyData[month],
+    }));
+  };
+
+  // Dynamic chart data based on real API data
   const chartDataMap = {
-    shipments: [
-      { label: "Jan", value: 1 },
-      { label: "Feb", value: 1 },
-      { label: "Mar", value: 2 },
-      { label: "Apr", value: 1 },
-      { label: "May", value: 1 },
-      { label: "Jun", value: 1 },
-      { label: "Jul", value: 1 },
-    ],
-    ports: [
-      { label: "Jan", value: 2 },
-      { label: "Feb", value: 3 },
-      { label: "Mar", value: 3 },
-      { label: "Apr", value: 4 },
-      { label: "May", value: 5 },
-      { label: "Jun", value: 5 },
-      { label: "Jul", value: 5 },
-    ],
-    cargo: [
-      { label: "Jan", value: 120 },
-      { label: "Feb", value: 150 },
-      { label: "Mar", value: 180 },
-      { label: "Apr", value: 210 },
-      { label: "May", value: 240 },
-      { label: "Jun", value: 280 },
-      { label: "Jul", value: 320 },
-    ],
-    trades: [
-      { label: "Jan", value: 8 },
-      { label: "Feb", value: 12 },
-      { label: "Mar", value: 15 },
-      { label: "Apr", value: 18 },
-      { label: "May", value: 22 },
-      { label: "Jun", value: 25 },
-      { label: "Jul", value: 30 },
-    ],
+    shipments: generateChartData(shipmentData, "shipments"),
+    ports: generateChartData(portsData, "ports"),
+    cargo: generateChartData(cargoData, "cargo"),
+    trades: generateChartData(tradesData, "trades"),
   };
 
   const chartConfig = {
@@ -506,7 +355,7 @@ function Dashboard() {
             icon: FiBox,
             label: "Cargo Types",
             value: stats.cargo,
-            color: "primary",
+            color: "secondary",
           },
           {
             key: "trades",

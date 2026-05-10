@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Card,
   Table,
@@ -18,6 +19,7 @@ function Branches() {
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [selectedPort, setSelectedPort] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     Port_ID: "",
@@ -28,55 +30,30 @@ function Branches() {
   });
 
   const [errors, setErrors] = useState({});
+  const [loadingPorts, setLoadingPorts] = useState([]);
+  const [dischargePorts, setDischargePorts] = useState([]);
 
-  // Dummy data matching LoadingPort_3NF and DischargePort_3NF schema from app.py
-  const [loadingPorts, setLoadingPorts] = useState([
-    {
-      Loading_Port_ID: 301,
-      Port_Name: "Shanghai Port",
-      Country: "China",
-      Port_Type: "Seaport",
-      Location: "Shanghai",
-    },
-    {
-      Loading_Port_ID: 302,
-      Port_Name: "Karachi Port",
-      Country: "Pakistan",
-      Port_Type: "Seaport",
-      Location: "Karachi",
-    },
-    {
-      Loading_Port_ID: 303,
-      Port_Name: "Singapore Port",
-      Country: "Singapore",
-      Port_Type: "Seaport",
-      Location: "Singapore",
-    },
-  ]);
+  useEffect(() => {
+    fetchPorts();
+  }, []);
 
-  const [dischargePorts, setDischargePorts] = useState([
-    {
-      Discharge_Port_ID: 401,
-      Port_Name: "Karachi Port",
-      Country: "Pakistan",
-      Port_Type: "Seaport",
-      Location: "Karachi",
-    },
-    {
-      Discharge_Port_ID: 402,
-      Port_Name: "Dubai Port",
-      Country: "UAE",
-      Port_Type: "Seaport",
-      Location: "Dubai",
-    },
-    {
-      Discharge_Port_ID: 403,
-      Port_Name: "Jeddah Port",
-      Country: "Saudi Arabia",
-      Port_Type: "Seaport",
-      Location: "Jeddah",
-    },
-  ]);
+  const API_BASE = "http://127.0.0.1:5000/api/";
+
+  const fetchPorts = async () => {
+    try {
+      setLoading(true);
+      const [loadingRes, dischargeRes] = await Promise.all([
+        axios.get(`${API_BASE}/ports/loading`),
+        axios.get(`${API_BASE}/ports/discharge`),
+      ]);
+      setLoadingPorts(loadingRes.data);
+      setDischargePorts(dischargeRes.data);
+    } catch (error) {
+      console.error("Error fetching ports:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -119,34 +96,30 @@ function Branches() {
     setShowAdd(true);
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    const newPort = {
-      ...formData,
-      Port_ID:
-        parseInt(formData.Port_ID) ||
-        (activeTab === "loading" ? 300 : 400) +
-          (activeTab === "loading"
-            ? loadingPorts.length
-            : dischargePorts.length) +
-          1,
-    };
-    if (activeTab === "loading") {
-      setLoadingPorts([
-        ...loadingPorts,
-        { ...newPort, Loading_Port_ID: newPort.Port_ID },
-      ]);
-    } else {
-      setDischargePorts([
-        ...dischargePorts,
-        { ...newPort, Discharge_Port_ID: newPort.Port_ID },
-      ]);
+    try {
+      const newPort = {
+        Port_Name: formData.Port_Name,
+        Country: formData.Country,
+        Port_Type: formData.Port_Type,
+        Location: formData.Location,
+      };
+      if (activeTab === "loading") {
+        await axios.post(`${API_BASE}/ports/loading`, newPort);
+      } else {
+        await axios.post(`${API_BASE}/ports/discharge`, newPort);
+      }
+      setShowAdd(false);
+      fetchPorts();
+    } catch (error) {
+      console.error("Error adding port:", error);
+      alert("Failed to add port");
     }
-    setShowAdd(false);
   };
 
   const openEdit = (port) => {
@@ -162,34 +135,32 @@ function Branches() {
     setShowEdit(true);
   };
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    if (activeTab === "loading") {
-      setLoadingPorts(
-        loadingPorts.map((p) =>
-          p.Loading_Port_ID === selectedPort.Loading_Port_ID
-            ? { ...p, ...formData, Loading_Port_ID: parseInt(formData.Port_ID) }
-            : p,
-        ),
-      );
-    } else {
-      setDischargePorts(
-        dischargePorts.map((p) =>
-          p.Discharge_Port_ID === selectedPort.Discharge_Port_ID
-            ? {
-                ...p,
-                ...formData,
-                Discharge_Port_ID: parseInt(formData.Port_ID),
-              }
-            : p,
-        ),
-      );
+    try {
+      const updatedPort = {
+        Port_Name: formData.Port_Name,
+        Country: formData.Country,
+        Port_Type: formData.Port_Type,
+        Location: formData.Location,
+      };
+      const portId =
+        selectedPort.Loading_Port_ID || selectedPort.Discharge_Port_ID;
+      const endpoint =
+        activeTab === "loading"
+          ? `${API_BASE}/ports/loading/${portId}`
+          : `${API_BASE}/ports/discharge/${portId}`;
+      await axios.put(endpoint, updatedPort);
+      setShowEdit(false);
+      fetchPorts();
+    } catch (error) {
+      console.error("Error updating port:", error);
+      alert("Failed to update port");
     }
-    setShowEdit(false);
   };
 
   const openDelete = (port) => {
@@ -197,21 +168,21 @@ function Branches() {
     setShowDelete(true);
   };
 
-  const handleDelete = () => {
-    if (activeTab === "loading") {
-      setLoadingPorts(
-        loadingPorts.filter(
-          (p) => p.Loading_Port_ID !== selectedPort.Loading_Port_ID,
-        ),
-      );
-    } else {
-      setDischargePorts(
-        dischargePorts.filter(
-          (p) => p.Discharge_Port_ID !== selectedPort.Discharge_Port_ID,
-        ),
-      );
+  const handleDelete = async () => {
+    try {
+      const portId =
+        selectedPort.Loading_Port_ID || selectedPort.Discharge_Port_ID;
+      const endpoint =
+        activeTab === "loading"
+          ? `${API_BASE}/ports/loading/${portId}`
+          : `${API_BASE}/ports/discharge/${portId}`;
+      await axios.delete(endpoint);
+      setShowDelete(false);
+      fetchPorts();
+    } catch (error) {
+      console.error("Error deleting port:", error);
+      alert("Failed to delete port");
     }
-    setShowDelete(false);
   };
 
   const totalPorts = loadingPorts.length + dischargePorts.length;
@@ -288,36 +259,47 @@ function Branches() {
                   </tr>
                 </thead>
                 <tbody>
-                  {loadingPorts.map((port) => (
-                    <tr key={port.Loading_Port_ID}>
-                      <td>{port.Loading_Port_ID}</td>
-                      <td>{port.Port_Name}</td>
-                      <td>{port.Country}</td>
-                      <td>{port.Port_Type}</td>
-                      <td>{port.Location}</td>
-                      <td>
-                        <Button
-                          size="sm"
-                          className="me-2 action-btn"
-                          variant="outline-primary"
-                          onClick={() => openEdit(port)}
-                        >
-                          Edit
-                        </Button>
-                        {/* <Button variant="primary" size="sm" onClick={handleEdit}>
-            Save Changes
-          </Button> */}
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          className="action-btn"
-                          onClick={() => openDelete(port)}
-                        >
-                          Delete
-                        </Button>
+                  {loading ? (
+                    <tr>
+                      <td colSpan="6" className="text-center">
+                        Loading...
                       </td>
                     </tr>
-                  ))}
+                  ) : loadingPorts.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="text-center">
+                        No loading ports found
+                      </td>
+                    </tr>
+                  ) : (
+                    loadingPorts.map((port) => (
+                      <tr key={port.Loading_Port_ID}>
+                        <td>{port.Loading_Port_ID}</td>
+                        <td>{port.Port_Name}</td>
+                        <td>{port.Country}</td>
+                        <td>{port.Port_Type}</td>
+                        <td>{port.Location}</td>
+                        <td>
+                          <Button
+                            size="sm"
+                            className="me-2 action-btn"
+                            variant="outline-primary"
+                            onClick={() => openEdit(port)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            className="action-btn"
+                            onClick={() => openDelete(port)}
+                          >
+                            Delete
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </Table>
             </Card.Body>
@@ -339,33 +321,47 @@ function Branches() {
                   </tr>
                 </thead>
                 <tbody>
-                  {dischargePorts.map((port) => (
-                    <tr key={port.Discharge_Port_ID}>
-                      <td>{port.Discharge_Port_ID}</td>
-                      <td>{port.Port_Name}</td>
-                      <td>{port.Country}</td>
-                      <td>{port.Port_Type}</td>
-                      <td>{port.Location}</td>
-                      <td>
-                        <Button
-                          variant="outline-primary"
-                          size="sm"
-                          className="me-2 action-btn"
-                          onClick={() => openEdit(port)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          className="action-btn"
-                          onClick={() => openDelete(port)}
-                        >
-                          Delete
-                        </Button>
+                  {loading ? (
+                    <tr>
+                      <td colSpan="6" className="text-center">
+                        Loading...
                       </td>
                     </tr>
-                  ))}
+                  ) : dischargePorts.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="text-center">
+                        No discharge ports found
+                      </td>
+                    </tr>
+                  ) : (
+                    dischargePorts.map((port) => (
+                      <tr key={port.Discharge_Port_ID}>
+                        <td>{port.Discharge_Port_ID}</td>
+                        <td>{port.Port_Name}</td>
+                        <td>{port.Country}</td>
+                        <td>{port.Port_Type}</td>
+                        <td>{port.Location}</td>
+                        <td>
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            className="me-2 action-btn"
+                            onClick={() => openEdit(port)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            className="action-btn"
+                            onClick={() => openDelete(port)}
+                          >
+                            Delete
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </Table>
             </Card.Body>
@@ -382,7 +378,6 @@ function Branches() {
         </Modal.Header>
         <Modal.Body>
           <Form>
-           
             <Form.Group className="mb-3">
               <Form.Label>Port Name</Form.Label>
               <Form.Control
@@ -460,7 +455,6 @@ function Branches() {
         </Modal.Header>
         <Modal.Body>
           <Form>
-           
             <Form.Group className="mb-3">
               <Form.Label>Port Name</Form.Label>
               <Form.Control

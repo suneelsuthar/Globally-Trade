@@ -94,7 +94,7 @@
 }
 
 /* ERD Entity Colors */
-.entity-branches { background-color: #d5e8f2; border-left: 4px solid #2980b9; }
+.entity-branches { background-color: #d5e8f2; border-left: 4px solid #48CAE4; }
 .entity-tracking { background-color: #fff3d5; border-left: 4px solid #f39c12; }
 .entity-payments { background-color: #f2d5d5; border-left: 4px solid #c0392b; }
 .entity-shipments { background-color: #d5f2f0; border-left: 4px solid #16a085; }
@@ -137,9 +137,9 @@
   bottom: 0;
   background: linear-gradient(
     13deg,
-    rgba(15, 36, 84, 0.85) 0%,
-    rgba(32, 149, 174, 0.75) 50%,
-    rgba(15, 36, 84, 0.9) 100%
+    rgba(72, 202, 228, 0.85) 0%,
+    rgba(72, 202, 228, 0.75) 50%,
+    rgba(72, 202, 228, 0.9) 100%
   );
 }
 
@@ -339,7 +339,7 @@
 
 .feature-icon-track {
   background: rgba(32, 149, 174, 0.1);
-  color: #2095AE;
+  color: #48CAE4;
 }
 
 .feature-icon-global {
@@ -429,7 +429,7 @@
 }
 
 .stat-icon-ports {
-  background: #2095AE;
+  background: #48CAE4;
   color: white;
 }
 
@@ -439,7 +439,7 @@
 }
 
 .stat-icon-trades {
-  background: #2095AE;
+  background: #48CAE4;
   color: white;
 }
 
@@ -600,7 +600,7 @@
   .navbar-website .navbar-collapse,
   .navbar-scroll.scrolled .navbar-collapse,
   .navbar-custom .navbar-collapse {
-    background-color: #147a8f;
+    background-color: #48CAE4;
     padding: 1rem;
     margin-top: 0.5rem;
     border-radius: 8px;
@@ -716,7 +716,7 @@
 
 .simple-tile:hover {
   box-shadow: 0 4px 20px rgba(15, 36, 84, 0.1);
-  border-color: #2095AE;
+  border-color: #48CAE4;
 }
 
 .simple-tile-icon {
@@ -732,7 +732,7 @@
 }
 
 .simple-tile-icon.secondary {
-  background: #2095AE;
+  background: #48CAE4;
 }
 
 .simple-tile-content h3 {
@@ -768,7 +768,7 @@
   font-weight: 600;
   margin-bottom: 1.5rem;
   padding-bottom: 0.75rem;
-  border-bottom: 2px solid #2095AE;
+  border-bottom: 2px solid 48CAE4;
   display: inline-block;
 }
 
@@ -846,13 +846,13 @@
 }
 
 .simple-tabs .nav-link:hover {
-  color: #2095AE;
+  color: #48CAE4;
   border-color: transparent;
 }
 
 .simple-tabs .nav-link.active {
   color: #0f2454;
-  border-bottom: 2px solid #2095AE;
+  border-bottom: 2px solid #48CAE4;
   background: transparent;
   font-weight: 600;
 }
@@ -914,14 +914,14 @@
 }
 
 .filter-btn {
-  border-color: #2095AE;
-  color: #2095AE;
+  border-color: #48CAE4;
+  color: #48CAE4;
   font-weight: 500;
 }
 
 .filter-btn:hover {
-  background: #2095AE;
-  border-color: #2095AE;
+  background: #48CAE4;
+  border-color: #48CAE4;
   color: white;
 }
 
@@ -944,7 +944,7 @@
 }
 
 .dashboard-tile.active-tile {
-  border: 2px solid #2095AE;
+  border: 2px solid #48CAE4;
   box-shadow: 0 4px 20px rgba(32, 149, 174, 0.2);
 }
 
@@ -964,7 +964,7 @@
 }
 
 .dashboard-tile-icon.secondary {
-  background: #2095AE;
+  background: #48CAE4;
   color: white;
 }
 
@@ -1015,7 +1015,7 @@
   font-size: 1.1rem;
   font-weight: 600;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid #2095AE;
+  border-bottom: 2px solid #48CAE4;
   display: inline-block;
 }
 
@@ -1087,7 +1087,7 @@
 .modal-header-theme {
   background: var(--secondary-dark);
   color: white;
-  border-bottom: 2px solid #2095AE;
+  border-bottom: 2px solid #48CAE4;
 }
 
 .modal-header-theme .btn-close {
@@ -1117,7 +1117,7 @@
 
 .modal-footer .btn-primary {
   background: var(--secondary-dark);
-  border-color: #2095AE;
+  border-color: #48CAE4;
 }
 
 .modal-footer .btn-primary:hover {

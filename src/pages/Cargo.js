@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Card,
   Table,
@@ -16,6 +17,7 @@ function Cargo() {
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [selectedCargo, setSelectedCargo] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     Cargo_ID: "",
@@ -26,37 +28,25 @@ function Cargo() {
   });
 
   const [errors, setErrors] = useState({});
+  const [cargoData, setCargoData] = useState([]);
 
-  const [cargoData, setCargoData] = useState([
-    {
-      Cargo_ID: 201,
-      Cargo_Type: "Container Cargo",
-      Trade_Category: "Electronics",
-      Description: "Electronic Goods",
-      Hazard_Level: "Medium",
-    },
-    {
-      Cargo_ID: 202,
-      Cargo_Type: "Liquid Cargo",
-      Trade_Category: "Oil & Gas",
-      Description: "Petroleum Products",
-      Hazard_Level: "High",
-    },
-    {
-      Cargo_ID: 203,
-      Cargo_Type: "Dry Cargo",
-      Trade_Category: "Food",
-      Description: "Food Products",
-      Hazard_Level: "Low",
-    },
-    {
-      Cargo_ID: 204,
-      Cargo_Type: "Hazardous Cargo",
-      Trade_Category: "Chemicals",
-      Description: "Chemical Materials",
-      Hazard_Level: "High",
-    },
-  ]);
+  useEffect(() => {
+    fetchCargo();
+  }, []);
+
+  const API_BASE = "http://127.0.0.1:5000/api/";
+
+  const fetchCargo = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE}/cargo`);
+      setCargoData(response.data);
+    } catch (error) {
+      console.error("Error fetching cargo:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getHazardBadge = (level) => {
     switch (level) {
@@ -112,18 +102,26 @@ function Cargo() {
     setShowAdd(true);
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    const newCargo = {
-      ...formData,
-      Cargo_ID: parseInt(formData.Cargo_ID) || 200 + cargoData.length + 1,
-    };
-    setCargoData([...cargoData, newCargo]);
-    setShowAdd(false);
+    try {
+      const newCargo = {
+        Cargo_Type: formData.Cargo_Type,
+        Trade_Category: formData.Trade_Category,
+        Description: formData.Description,
+        Hazard_Level: formData.Hazard_Level,
+      };
+      await axios.post(`${API_BASE}/cargo`, newCargo);
+      setShowAdd(false);
+      fetchCargo();
+    } catch (error) {
+      console.error("Error adding cargo:", error);
+      alert("Failed to add cargo");
+    }
   };
 
   const openEdit = (cargo) => {
@@ -133,18 +131,29 @@ function Cargo() {
     setShowEdit(true);
   };
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    setCargoData(
-      cargoData.map((c) =>
-        c.Cargo_ID === selectedCargo.Cargo_ID ? { ...formData } : c,
-      ),
-    );
-    setShowEdit(false);
+    try {
+      const updatedCargo = {
+        Cargo_Type: formData.Cargo_Type,
+        Trade_Category: formData.Trade_Category,
+        Description: formData.Description,
+        Hazard_Level: formData.Hazard_Level,
+      };
+      await axios.put(
+        `${API_BASE}/cargo/${selectedCargo.Cargo_ID}`,
+        updatedCargo,
+      );
+      setShowEdit(false);
+      fetchCargo();
+    } catch (error) {
+      console.error("Error updating cargo:", error);
+      alert("Failed to update cargo");
+    }
   };
 
   const openDelete = (cargo) => {
@@ -152,11 +161,15 @@ function Cargo() {
     setShowDelete(true);
   };
 
-  const handleDelete = () => {
-    setCargoData(
-      cargoData.filter((c) => c.Cargo_ID !== selectedCargo.Cargo_ID),
-    );
-    setShowDelete(false);
+  const handleDelete = async () => {
+    try {
+      await axios.delete(`${API_BASE}/cargo/${selectedCargo.Cargo_ID}`);
+      setShowDelete(false);
+      fetchCargo();
+    } catch (error) {
+      console.error("Error deleting cargo:", error);
+      alert("Failed to delete cargo");
+    }
   };
 
   const totalCargo = cargoData.length;
@@ -224,33 +237,47 @@ function Cargo() {
               </tr>
             </thead>
             <tbody>
-              {cargoData.map((cargo) => (
-                <tr key={cargo.Cargo_ID}>
-                  <td>{cargo.Cargo_ID}</td>
-                  <td>{cargo.Cargo_Type}</td>
-                  <td>{cargo.Trade_Category}</td>
-                  <td>{cargo.Description}</td>
-                  <td>{getHazardBadge(cargo.Hazard_Level)}</td>
-                  <td>
-                    <Button
-                      variant="outline-primary"
-                      size="sm"
-                      className="me-2 action-btn"
-                      onClick={() => openEdit(cargo)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline-danger"
-                      size="sm"
-                      className="action-btn"
-                      onClick={() => openDelete(cargo)}
-                    >
-                      Delete
-                    </Button>
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="text-center">
+                    Loading...
                   </td>
                 </tr>
-              ))}
+              ) : cargoData.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="text-center">
+                    No cargo found
+                  </td>
+                </tr>
+              ) : (
+                cargoData.map((cargo) => (
+                  <tr key={cargo.Cargo_ID}>
+                    <td>{cargo.Cargo_ID}</td>
+                    <td>{cargo.Cargo_Type}</td>
+                    <td>{cargo.Trade_Category}</td>
+                    <td>{cargo.Description}</td>
+                    <td>{getHazardBadge(cargo.Hazard_Level)}</td>
+                    <td>
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        className="me-2 action-btn"
+                        onClick={() => openEdit(cargo)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        className="action-btn"
+                        onClick={() => openDelete(cargo)}
+                      >
+                        Delete
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </Table>
         </Card.Body>

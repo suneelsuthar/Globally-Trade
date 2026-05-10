@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Card,
   Table,
@@ -21,6 +22,7 @@ function Shipments() {
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     Shipment_ID: "",
@@ -32,41 +34,31 @@ function Shipments() {
   });
 
   const [errors, setErrors] = useState({});
+  const [allShipments, setAllShipments] = useState([]);
 
-  const [allShipments, setAllShipments] = useState([
-    {
-      Shipment_ID: 1001,
-      Year: 2024,
-      Departure_Date: "2024-01-05",
-      Arrival_Date: "2024-01-20",
-      Transit_Days: 15,
-      Trade_Direction: "Import",
-    },
-    {
-      Shipment_ID: 1002,
-      Year: 2024,
-      Departure_Date: "2024-02-10",
-      Arrival_Date: "2024-02-25",
-      Transit_Days: 15,
-      Trade_Direction: "Export",
-    },
-    {
-      Shipment_ID: 1003,
-      Year: 2024,
-      Departure_Date: "2024-03-01",
-      Arrival_Date: "2024-03-18",
-      Transit_Days: 17,
-      Trade_Direction: "Import",
-    },
-    {
-      Shipment_ID: 1004,
-      Year: 2024,
-      Departure_Date: "2024-03-15",
-      Arrival_Date: "2024-03-30",
-      Transit_Days: 15,
-      Trade_Direction: "Export",
-    },
-  ]);
+  useEffect(() => {
+    fetchShipments();
+  }, [filterDirection, filterShipmentId]);
+
+  const API_BASE = "http://127.0.0.1:5000/api/";
+
+  const fetchShipments = async () => {
+    try {
+      setLoading(true);
+      let url = `${API_BASE}/shipments`;
+      const params = new URLSearchParams();
+      if (filterDirection) params.append("direction", filterDirection);
+      if (filterShipmentId) params.append("shipment_id", filterShipmentId);
+      if (params.toString()) url += `?${params.toString()}`;
+
+      const response = await axios.get(url);
+      setAllShipments(response.data);
+    } catch (error) {
+      console.error("Error fetching shipments:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   let shipments = allShipments;
   if (filterDirection) {
@@ -130,20 +122,27 @@ function Shipments() {
     setShowAdd(true);
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    const newShipment = {
-      ...formData,
-      Shipment_ID:
-        parseInt(formData.Shipment_ID) || 1000 + allShipments.length + 1,
-      Transit_Days: parseInt(formData.Transit_Days) || 0,
-    };
-    setAllShipments([...allShipments, newShipment]);
-    setShowAdd(false);
+    try {
+      const newShipment = {
+        Year: parseInt(formData.Year),
+        Departure_Date: formData.Departure_Date,
+        Arrival_Date: formData.Arrival_Date,
+        Transit_Days: parseInt(formData.Transit_Days),
+        Trade_Direction: formData.Trade_Direction,
+      };
+      await axios.post(`${API_BASE}/shipments`, newShipment);
+      setShowAdd(false);
+      fetchShipments();
+    } catch (error) {
+      console.error("Error adding shipment:", error);
+      alert("Failed to add shipment");
+    }
   };
 
   const openEdit = (shipment) => {
@@ -153,20 +152,30 @@ function Shipments() {
     setShowEdit(true);
   };
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    setAllShipments(
-      allShipments.map((s) =>
-        s.Shipment_ID === selectedShipment.Shipment_ID
-          ? { ...formData, Transit_Days: parseInt(formData.Transit_Days) || 0 }
-          : s,
-      ),
-    );
-    setShowEdit(false);
+    try {
+      const updatedShipment = {
+        Year: parseInt(formData.Year),
+        Departure_Date: formData.Departure_Date,
+        Arrival_Date: formData.Arrival_Date,
+        Transit_Days: parseInt(formData.Transit_Days),
+        Trade_Direction: formData.Trade_Direction,
+      };
+      await axios.put(
+        `${API_BASE}/shipments/${selectedShipment.Shipment_ID}`,
+        updatedShipment,
+      );
+      setShowEdit(false);
+      fetchShipments();
+    } catch (error) {
+      console.error("Error updating shipment:", error);
+      alert("Failed to update shipment");
+    }
   };
 
   const openDelete = (shipment) => {
@@ -174,13 +183,17 @@ function Shipments() {
     setShowDelete(true);
   };
 
-  const handleDelete = () => {
-    setAllShipments(
-      allShipments.filter(
-        (s) => s.Shipment_ID !== selectedShipment.Shipment_ID,
-      ),
-    );
-    setShowDelete(false);
+  const handleDelete = async () => {
+    try {
+      await axios.delete(
+        `${API_BASE}/shipments/${selectedShipment.Shipment_ID}`,
+      );
+      setShowDelete(false);
+      fetchShipments();
+    } catch (error) {
+      console.error("Error deleting shipment:", error);
+      alert("Failed to delete shipment");
+    }
   };
 
   const getDirectionBadge = (direction) => {
@@ -278,34 +291,48 @@ function Shipments() {
               </tr>
             </thead>
             <tbody>
-              {shipments.map((shipment) => (
-                <tr key={shipment.Shipment_ID}>
-                  <td>{shipment.Shipment_ID}</td>
-                  <td>{shipment.Year}</td>
-                  <td>{shipment.Departure_Date}</td>
-                  <td>{shipment.Arrival_Date}</td>
-                  <td>{shipment.Transit_Days} days</td>
-                  <td>{getDirectionBadge(shipment.Trade_Direction)}</td>
-                  <td>
-                    <Button
-                      variant="outline-primary"
-                      size="sm"
-                      className="me-2 action-btn"
-                      onClick={() => openEdit(shipment)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline-danger"
-                      size="sm"
-                      className="action-btn"
-                      onClick={() => openDelete(shipment)}
-                    >
-                      Delete
-                    </Button>
+              {loading ? (
+                <tr>
+                  <td colSpan="7" className="text-center">
+                    Loading...
                   </td>
                 </tr>
-              ))}
+              ) : shipments.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="text-center">
+                    No shipments found
+                  </td>
+                </tr>
+              ) : (
+                shipments.map((shipment) => (
+                  <tr key={shipment.Shipment_ID}>
+                    <td>{shipment.Shipment_ID}</td>
+                    <td>{shipment.Year}</td>
+                    <td>{shipment.Departure_Date}</td>
+                    <td>{shipment.Arrival_Date}</td>
+                    <td>{shipment.Transit_Days} days</td>
+                    <td>{getDirectionBadge(shipment.Trade_Direction)}</td>
+                    <td>
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        className="me-2 action-btn"
+                        onClick={() => openEdit(shipment)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        className="action-btn"
+                        onClick={() => openDelete(shipment)}
+                      >
+                        Delete
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </Table>
         </Card.Body>
